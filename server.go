@@ -21,7 +21,8 @@ func createServer(port string) *Server {
 func startServer() {
 	server := createServer("8080")
 
-	server.Handler.Handle("/", http.FileServer(serverRootPath))
+	server.Handler.Handle("/app/", http.StripPrefix("/app/", http.FileServer(serverRootPath)))
+	server.Handler.HandleFunc("/healthz", handleReadiness)
 
 	fmt.Printf("🐣 Chirping on http://localhost%s\n", server.Addr)
 	err := http.ListenAndServe(server.Addr, server.Handler)
@@ -30,4 +31,10 @@ func startServer() {
 		fmt.Println(err)
 		return
 	}
+}
+
+func handleReadiness(w http.ResponseWriter, req *http.Request) {
+	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(http.StatusText(http.StatusOK)))
 }
