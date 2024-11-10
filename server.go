@@ -14,8 +14,12 @@ const (
 	serverRootPath = http.Dir("./src")
 )
 
+func createServer(port string) *Server {
+	return &Server{http.NewServeMux(), ":" + port}
+}
+
 func startServer() {
-	server := &Server{http.NewServeMux(), ":8080"}
+	server := createServer("8080")
 
 	server.Handler.Handle("/", http.FileServer(serverRootPath))
 
