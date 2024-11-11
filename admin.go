@@ -6,18 +6,6 @@ import (
 	"sync/atomic"
 )
 
-const (
-	contentType          = "Content-Type"
-	plainTextContentType = "text/plain; charset=utf-8"
-	textHtmlContentType  = "text/html; charset=utf-8"
-)
-
-func handleReadiness(w http.ResponseWriter, req *http.Request) {
-	w.Header().Add(contentType, plainTextContentType)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(http.StatusText(http.StatusOK)))
-}
-
 func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add(contentType, textHtmlContentType)
 	w.WriteHeader(http.StatusOK)

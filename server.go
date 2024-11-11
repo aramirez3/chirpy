@@ -13,8 +13,11 @@ type Server struct {
 }
 
 const (
-	serverRootPath = http.Dir("./src")
-	adminPath      = http.Dir("./admin")
+	serverRootPath       = http.Dir("./src")
+	adminPath            = http.Dir("./admin")
+	contentType          = "Content-Type"
+	plainTextContentType = "text/plain; charset=utf-8"
+	textHtmlContentType  = "text/html; charset=utf-8"
 )
 
 func createServer(port string) *Server {
@@ -26,6 +29,7 @@ func startServer() {
 
 	server.Handler.Handle("/app/", http.StripPrefix("/app/", server.Config.middlewareMetricsInc(http.FileServer(serverRootPath))))
 	server.Handler.HandleFunc("GET /api/healthz", handleReadiness)
+	server.Handler.HandleFunc("POST /api/validate_chirp", handleValidateChirp)
 	server.Handler.HandleFunc("GET /admin/metrics", server.Config.handlerMetrics)
 	server.Handler.HandleFunc("POST /admin/reset", server.Config.handleReset)
 
