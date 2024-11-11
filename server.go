@@ -24,17 +24,15 @@ func createServer(port string) *Server {
 	return &Server{http.NewServeMux(), ":" + port, apiConfig{fileServerHits: atomic.Int32{}}}
 }
 
-func startServer() {
-	server := createServer("8080")
+func (s *Server) startServer() {
+	s.Handler.Handle("/app/", http.StripPrefix("/app/", s.Config.middlewareMetricsInc(http.FileServer(serverRootPath))))
+	s.Handler.HandleFunc("GET /api/healthz", handleReadiness)
+	s.Handler.HandleFunc("POST /api/validate_chirp", handleValidateChirp)
+	s.Handler.HandleFunc("GET /admin/metrics", s.Config.handlerMetrics)
+	s.Handler.HandleFunc("POST /admin/reset", s.Config.handleReset)
 
-	server.Handler.Handle("/app/", http.StripPrefix("/app/", server.Config.middlewareMetricsInc(http.FileServer(serverRootPath))))
-	server.Handler.HandleFunc("GET /api/healthz", handleReadiness)
-	server.Handler.HandleFunc("POST /api/validate_chirp", handleValidateChirp)
-	server.Handler.HandleFunc("GET /admin/metrics", server.Config.handlerMetrics)
-	server.Handler.HandleFunc("POST /admin/reset", server.Config.handleReset)
-
-	fmt.Printf("🐣 Chirping on http://localhost%s\n", server.Addr)
-	err := http.ListenAndServe(server.Addr, server.Handler)
+	fmt.Printf("🐣 Chirping on http://localhost%s\n", s.Addr)
+	err := http.ListenAndServe(s.Addr, s.Handler)
 
 	if err != nil {
 		fmt.Println(err)
