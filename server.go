@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"sync/atomic"
 )
 
@@ -14,9 +13,7 @@ type Server struct {
 }
 
 const (
-	serverRootPath    = http.Dir("./src")
-	contentType       = "Content-Type"
-	headerContentType = "text/plain; charset=utf-8"
+	serverRootPath = http.Dir("./src")
 )
 
 func createServer(port string) *Server {
@@ -29,6 +26,7 @@ func startServer() {
 	server.Handler.Handle("/app/", http.StripPrefix("/app/", server.Config.middlewareMetricsInc(http.FileServer(serverRootPath))))
 	server.Handler.HandleFunc("/healthz", handleReadiness)
 	server.Handler.HandleFunc("/metrics", server.Config.handlerMetrics)
+	server.Handler.HandleFunc("/reset", server.Config.handleReset)
 
 	fmt.Printf("🐣 Chirping on http://localhost%s\n", server.Addr)
 	err := http.ListenAndServe(server.Addr, server.Handler)
@@ -37,17 +35,4 @@ func startServer() {
 		fmt.Println(err)
 		return
 	}
-}
-
-func handleReadiness(w http.ResponseWriter, req *http.Request) {
-	w.Header().Add(contentType, headerContentType)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(http.StatusText(http.StatusOK)))
-}
-
-func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, req *http.Request) {
-	w.Header().Add(contentType, headerContentType)
-	w.WriteHeader(http.StatusOK)
-	hits := cfg.fileServerHits.Load()
-	w.Write([]byte(strconv.Itoa(int(hits))))
 }
