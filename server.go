@@ -27,6 +27,7 @@ const (
 	contentType          = "Content-Type"
 	plainTextContentType = "text/plain; charset=utf-8"
 	textHtmlContentType  = "text/html; charset=utf-8"
+	standardError        = "Something went wrong"
 )
 
 func createServer(port string) *Server {
@@ -36,7 +37,7 @@ func createServer(port string) *Server {
 func (s *Server) startServer() {
 	s.Handler.Handle("/app/", http.StripPrefix("/app/", s.Config.middlewareMetricsInc(http.FileServer(serverRootPath))))
 	s.Handler.HandleFunc("GET /api/healthz", handleReadiness)
-	s.Handler.HandleFunc("POST /api/validate_chirp", handleValidateChirp)
+	s.Handler.HandleFunc("POST /api/chips", handleNewChirp)
 	s.Handler.HandleFunc("GET /admin/metrics", s.Config.handlerMetrics)
 	s.Handler.HandleFunc("POST /admin/reset", s.Config.handleReset)
 	s.Handler.HandleFunc("POST /api/users", s.Config.handleNewUser)
@@ -57,13 +58,15 @@ func encodeJson(body any) ([]byte, error) {
 	return data, nil
 }
 
-func returnErrorResponse(w http.ResponseWriter) {
+func returnErrorResponse(w http.ResponseWriter, errorString string) {
+	if errorString == "" {
+		errorString = standardError
+	}
+	w.WriteHeader(http.StatusBadRequest)
 	w.Header().Add(contentType, plainTextContentType)
 	w.WriteHeader(http.StatusBadRequest)
-	errorResponse := ErrorResponse{
-		Error: "Something went wrong",
-	}
-	respBody, _ := encodeJson(errorResponse)
+	respBody, _ := encodeJson(ErrorResponse{
+		Error: errorString,
+	})
 	w.Write(respBody)
-
 }
