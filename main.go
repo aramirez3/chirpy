@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aramirez3/chirpy/internal/database"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -18,6 +19,6 @@ func main() {
 		return
 	}
 	s := createServer("8080")
-	s.Config.db = db
+	s.Config.dbQueries = database.New(db)
 	s.startServer()
 }

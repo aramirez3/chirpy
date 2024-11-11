@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -50,25 +49,6 @@ func handleValidateChirp(w http.ResponseWriter, req *http.Request) {
 		respBody, _ := encodeJson(errorResponse)
 		w.Write(respBody)
 	}
-
-}
-
-func encodeJson(body any) ([]byte, error) {
-	data, err := json.Marshal(body)
-	if err != nil {
-		log.Printf("error marshaling json: %s\n", err)
-	}
-	return data, nil
-}
-
-func returnErrorResponse(w http.ResponseWriter) {
-	w.Header().Add(contentType, plainTextContentType)
-	w.WriteHeader(http.StatusBadRequest)
-	errorResponse := ErrorResponse{
-		Error: "Something went wrong",
-	}
-	respBody, _ := encodeJson(errorResponse)
-	w.Write(respBody)
 
 }
 

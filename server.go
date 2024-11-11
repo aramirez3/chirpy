@@ -1,15 +1,24 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync/atomic"
+
+	"github.com/aramirez3/chirpy/internal/database"
 )
 
 type Server struct {
 	Handler *http.ServeMux
 	Addr    string
 	Config  apiConfig
+}
+
+type apiConfig struct {
+	fileServerHits atomic.Int32
+	dbQueries      *database.Queries
 }
 
 const (
@@ -30,7 +39,7 @@ func (s *Server) startServer() {
 	s.Handler.HandleFunc("POST /api/validate_chirp", handleValidateChirp)
 	s.Handler.HandleFunc("GET /admin/metrics", s.Config.handlerMetrics)
 	s.Handler.HandleFunc("POST /admin/reset", s.Config.handleReset)
-
+	s.Handler.HandleFunc("POST /api/users", s.Config.handleNewUser)
 	fmt.Printf("🐣 Chirping on http://localhost%s\n", s.Addr)
 	err := http.ListenAndServe(s.Addr, s.Handler)
 
@@ -38,4 +47,23 @@ func (s *Server) startServer() {
 		fmt.Println(err)
 		return
 	}
+}
+
+func encodeJson(body any) ([]byte, error) {
+	data, err := json.Marshal(body)
+	if err != nil {
+		log.Printf("error marshaling json: %s\n", err)
+	}
+	return data, nil
+}
+
+func returnErrorResponse(w http.ResponseWriter) {
+	w.Header().Add(contentType, plainTextContentType)
+	w.WriteHeader(http.StatusBadRequest)
+	errorResponse := ErrorResponse{
+		Error: "Something went wrong",
+	}
+	respBody, _ := encodeJson(errorResponse)
+	w.Write(respBody)
+
 }
