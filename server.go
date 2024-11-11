@@ -14,6 +14,7 @@ type Server struct {
 
 const (
 	serverRootPath = http.Dir("./src")
+	adminPath      = http.Dir("./admin")
 )
 
 func createServer(port string) *Server {
@@ -24,9 +25,9 @@ func startServer() {
 	server := createServer("8080")
 
 	server.Handler.Handle("/app/", http.StripPrefix("/app/", server.Config.middlewareMetricsInc(http.FileServer(serverRootPath))))
-	server.Handler.HandleFunc("/healthz", handleReadiness)
-	server.Handler.HandleFunc("/metrics", server.Config.handlerMetrics)
-	server.Handler.HandleFunc("/reset", server.Config.handleReset)
+	server.Handler.HandleFunc("GET /api/healthz", handleReadiness)
+	server.Handler.HandleFunc("GET /admin/metrics", server.Config.handlerMetrics)
+	server.Handler.HandleFunc("POST /admin/reset", server.Config.handleReset)
 
 	fmt.Printf("🐣 Chirping on http://localhost%s\n", server.Addr)
 	err := http.ListenAndServe(server.Addr, server.Handler)
