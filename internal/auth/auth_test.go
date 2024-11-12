@@ -1,14 +1,20 @@
 package auth
 
 import (
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
+const (
+	password      = "password123"
+	wrongPassword = "grassword123"
+)
+
 func TestPasswordHash(t *testing.T) {
-	password := "password123"
 	hash, err := HashPassword(password)
 	if err != nil {
 		t.Fatal(err)
@@ -21,8 +27,7 @@ func TestPasswordHash(t *testing.T) {
 }
 
 func TestPasswordMismatch(t *testing.T) {
-	password := "password123"
-	wronghash, _ := HashPassword("helloworld")
+	wronghash, _ := HashPassword(wrongPassword)
 
 	err := CheckPasswordHash(password, wronghash)
 	if err == nil {
@@ -32,12 +37,12 @@ func TestPasswordMismatch(t *testing.T) {
 
 func TestJWT(t *testing.T) {
 	expected := uuid.New()
-	tokenString, err := MakeJWT(expected, "secret", 10*time.Second)
+	tokenString, err := MakeJWT(expected, password, 10*time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	actual, err := ValidateJWT(tokenString, "secret")
+	actual, err := ValidateJWT(tokenString, password)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,12 +53,12 @@ func TestJWT(t *testing.T) {
 
 func TestJWTMismatch(t *testing.T) {
 	expected := uuid.New()
-	tokenString, err := MakeJWT(expected, "secret", 10*time.Second)
+	tokenString, err := MakeJWT(expected, password, 10*time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	actual, err := ValidateJWT(tokenString, "NoSecret")
+	actual, err := ValidateJWT(tokenString, wrongPassword)
 	if err == nil {
 		t.Fatal(err)
 	}
@@ -61,4 +66,24 @@ func TestJWTMismatch(t *testing.T) {
 		t.Errorf("UUIDs should not match: expected %v, actual %v\n", expected, actual)
 	}
 
+}
+
+func TestExpiredToken(t *testing.T) {
+	id := uuid.New()
+	duration := time.Duration(2 * time.Second)
+	tokenString, err := MakeJWT(id, password, duration)
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(duration * 2)
+	_, err = ValidateJWT(tokenString, password)
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			t.Log("Token expired as expected")
+		} else {
+			t.Errorf("Expected token expiration error, got: %v\n", err)
+		}
+		return
+	}
+	t.Errorf("Token did not expire")
 }
