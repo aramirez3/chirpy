@@ -22,6 +22,8 @@ type CreateUser struct {
 	Password string `json:"password"`
 }
 
+type Login = CreateUser
+
 func (cfg *apiConfig) handleNewUser(w http.ResponseWriter, req *http.Request) {
 	decoder := json.NewDecoder(req.Body)
 	createUser := CreateUser{}
@@ -65,4 +67,50 @@ func (cfg *apiConfig) handleNewUser(w http.ResponseWriter, req *http.Request) {
 	respBody, _ := encodeJson(newUser)
 	w.WriteHeader(http.StatusCreated)
 	w.Write(respBody)
+}
+
+func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
+	decoder := json.NewDecoder(req.Body)
+	login := Login{}
+	err := decoder.Decode(&login)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	dbUser, err := cfg.dbQueries.GetUserByEmail(req.Context(), login.Email)
+	if err != nil || dbUser.HashedPassword == "" {
+		returnErrorResponse(w, standardError)
+		return
+	}
+
+	hash, err := auth.HashPassword(login.Password)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+
+	err = auth.CheckPasswordHash(login.Password, hash)
+	if err != nil {
+		returnNotAuthorized(w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	user := ToResponseUser(dbUser)
+	responseUser, err := encodeJson(user)
+	if err != nil {
+		returnNotAuthorized(w)
+		return
+	}
+	w.Header().Add(contentType, plainTextContentType)
+	w.Write(responseUser)
+}
+
+func ToResponseUser(u database.User) User {
+	return User{
+		Id:        u.ID,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+		Email:     u.Email,
+	}
 }

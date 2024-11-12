@@ -43,6 +43,7 @@ func (s *Server) startServer() {
 	s.Handler.HandleFunc("GET /admin/metrics", s.Config.handlerMetrics)
 	s.Handler.HandleFunc("POST /admin/reset", s.Config.handleReset)
 	s.Handler.HandleFunc("POST /api/users", s.Config.handleNewUser)
+	s.Handler.HandleFunc("POST /api/login", s.Config.handleLogin)
 	fmt.Printf("🐣 Chirping on http://localhost%s\n", s.Addr)
 	err := http.ListenAndServe(s.Addr, s.Handler)
 
@@ -77,6 +78,15 @@ func returnNotFound(w http.ResponseWriter) {
 	w.Header().Add(contentType, plainTextContentType)
 	respBody, _ := encodeJson(ErrorResponse{
 		Error: http.StatusText(http.StatusNotFound),
+	})
+	w.Write(respBody)
+}
+
+func returnNotAuthorized(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusUnauthorized)
+	w.Header().Add(contentType, plainTextContentType)
+	respBody, _ := encodeJson(ErrorResponse{
+		Error: http.StatusText(http.StatusUnauthorized),
 	})
 	w.Write(respBody)
 }
