@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -44,9 +45,13 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	if err != nil {
 		return uuid.UUID{}, err
 	}
-	sub, err := parsedToken.Claims.GetSubject()
-	if err != nil || sub == "" {
-		return uuid.UUID{}, err
+	if !parsedToken.Valid {
+		return uuid.UUID{}, fmt.Errorf("invalid token")
+	}
+
+	sub := claims.Subject
+	if sub == "" {
+		return uuid.UUID{}, fmt.Errorf("subject is empty")
 	}
 
 	userId, err := uuid.Parse(sub)
