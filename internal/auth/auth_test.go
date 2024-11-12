@@ -85,5 +85,23 @@ func TestExpiredToken(t *testing.T) {
 		}
 		return
 	}
-	t.Errorf("Token did not expire")
+	t.Error("Token did not expire")
+}
+
+func TestMalformedToken(t *testing.T) {
+	_, err := ValidateJWT("random.string_not_valid.jwt", password)
+	if err == nil {
+		t.Error("Expected an error for malformed token, got nil")
+	}
+	if !errors.Is(err, jwt.ErrTokenMalformed) {
+		t.Errorf("Expected an error for malformed token, got: %v\n", err)
+	}
+
+	_, err = ValidateJWT("", password)
+	if err == nil {
+		t.Error("Expected an error for empty token, got: nil")
+	}
+	if !errors.Is(err, jwt.ErrTokenMalformed) {
+		t.Errorf("Expected an error for malformed token, got: %v\n", err)
+	}
 }
