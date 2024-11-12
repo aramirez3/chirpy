@@ -83,13 +83,7 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hash, err := auth.HashPassword(login.Password)
-	if err != nil {
-		returnErrorResponse(w, standardError)
-		return
-	}
-
-	err = auth.CheckPasswordHash(login.Password, hash)
+	err = auth.CheckPasswordHash(login.Password, dbUser.HashedPassword)
 	if err != nil {
 		returnNotAuthorized(w)
 		return

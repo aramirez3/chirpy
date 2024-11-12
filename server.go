@@ -83,6 +83,7 @@ func returnNotFound(w http.ResponseWriter) {
 }
 
 func returnNotAuthorized(w http.ResponseWriter) {
+	fmt.Println("Return 401 not authorized")
 	w.WriteHeader(http.StatusUnauthorized)
 	w.Header().Add(contentType, plainTextContentType)
 	respBody, _ := encodeJson(ErrorResponse{
