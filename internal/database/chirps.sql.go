@@ -51,3 +51,24 @@ func (q *Queries) CreateChirp(ctx context.Context, arg CreateChirpParams) (Chirp
 	)
 	return i, err
 }
+
+const deleteAllChirps = `-- name: DeleteAllChirps :exec
+
+DELETE from chirps
+`
+
+func (q *Queries) DeleteAllChirps(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteAllChirps)
+	return err
+}
+
+const getChirpsCount = `-- name: GetChirpsCount :one
+Select count(*) from chirps
+`
+
+func (q *Queries) GetChirpsCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getChirpsCount)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}

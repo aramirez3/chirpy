@@ -9,3 +9,10 @@ INSERT INTO chirps(
 )
     values($1, $2, $3, $4, $5)
     RETURNING *;
+
+-- name: DeleteAllChirps :exec
+
+DELETE from chirps;
+
+-- name: GetChirpsCount :one
+Select count(*) from chirps;

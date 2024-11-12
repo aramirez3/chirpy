@@ -46,3 +46,23 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	)
 	return i, err
 }
+
+const deleteAllUsers = `-- name: DeleteAllUsers :exec
+DELETE from users
+`
+
+func (q *Queries) DeleteAllUsers(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteAllUsers)
+	return err
+}
+
+const getUsersCount = `-- name: GetUsersCount :one
+Select count(*) from users
+`
+
+func (q *Queries) GetUsersCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getUsersCount)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}

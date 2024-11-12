@@ -7,3 +7,9 @@ INSERT INTO users(
 )
     values($1, $2, $3, $4)
     returning *;
+
+-- name: DeleteAllUsers :exec
+DELETE from users;
+
+-- name: GetUsersCount :one
+Select count(*) from users;
