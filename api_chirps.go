@@ -132,6 +132,29 @@ func (cfg *apiConfig) handleGetChirps(w http.ResponseWriter, req *http.Request) 
 	w.Header().Add(contentType, plainTextContentType)
 }
 
+func (cfg *apiConfig) handleGetChirp(w http.ResponseWriter, req *http.Request) {
+	idString := req.PathValue("id")
+	if idString == "" {
+		returnNotFound(w)
+	}
+	chirpId, err := uuid.Parse(idString)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	dbChirp, err := cfg.dbQueries.GetChirpById(req.Context(), chirpId)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Add(contentType, plainTextContentType)
+	err = json.NewEncoder(w).Encode(dbChirpToResponse(dbChirp))
+	if err != nil {
+		returnErrorResponse(w, standardError)
+	}
+}
+
 func dbChirpsToResponse(dbChirps []database.Chirp) []Chirp {
 	response := []Chirp{}
 	for _, c := range dbChirps {

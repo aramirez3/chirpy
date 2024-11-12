@@ -39,6 +39,7 @@ func (s *Server) startServer() {
 	s.Handler.HandleFunc("GET /api/healthz", handleReadiness)
 	s.Handler.HandleFunc("POST /api/chirps", s.Config.handleNewChirp)
 	s.Handler.HandleFunc("GET /api/chirps", s.Config.handleGetChirps)
+	s.Handler.HandleFunc("GET /api/chirps/{id}", s.Config.handleGetChirp)
 	s.Handler.HandleFunc("GET /admin/metrics", s.Config.handlerMetrics)
 	s.Handler.HandleFunc("POST /admin/reset", s.Config.handleReset)
 	s.Handler.HandleFunc("POST /api/users", s.Config.handleNewUser)
@@ -67,6 +68,15 @@ func returnErrorResponse(w http.ResponseWriter, errorString string) {
 	w.Header().Add(contentType, plainTextContentType)
 	respBody, _ := encodeJson(ErrorResponse{
 		Error: errorString,
+	})
+	w.Write(respBody)
+}
+
+func returnNotFound(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNotFound)
+	w.Header().Add(contentType, plainTextContentType)
+	respBody, _ := encodeJson(ErrorResponse{
+		Error: http.StatusText(http.StatusNotFound),
 	})
 	w.Write(respBody)
 }

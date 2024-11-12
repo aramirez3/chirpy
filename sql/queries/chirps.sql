@@ -14,6 +14,10 @@ INSERT INTO chirps(
 
 DELETE FROM chirps;
 
+-- name: GetChirpById :one
+SELECT * FROM chirps
+WHERE id = $1;
+
 -- name: GetChirpsCount :one
 SELECT count(*) FROM chirps;
 
