@@ -11,14 +11,14 @@ func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, req *http.Request) {
 
 	usersCount, err := cfg.dbQueries.GetUsersCount(req.Context())
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		returnErrorResponse(w, standardError)
+		return
 	}
 
 	chirpsCount, err := cfg.dbQueries.GetChirpsCount(req.Context())
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		returnErrorResponse(w, standardError)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -40,14 +40,14 @@ func (cfg *apiConfig) handleReset(w http.ResponseWriter, req *http.Request) {
 
 	err := cfg.dbQueries.DeleteAllUsers(req.Context())
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		returnErrorResponse(w, standardError)
+		return
 	}
 
 	err = cfg.dbQueries.DeleteAllChirps(req.Context())
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		returnErrorResponse(w, standardError)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

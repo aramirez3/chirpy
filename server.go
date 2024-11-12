@@ -65,7 +65,7 @@ func returnErrorResponse(w http.ResponseWriter, errorString string) {
 		errorString = standardError
 	}
 	w.WriteHeader(http.StatusBadRequest)
-	w.Header().Add(contentType, plainTextContentType)
+	w.Header().Set(contentType, plainTextContentType)
 	respBody, _ := encodeJson(ErrorResponse{
 		Error: errorString,
 	})

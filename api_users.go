@@ -28,7 +28,6 @@ func (cfg *apiConfig) handleNewUser(w http.ResponseWriter, req *http.Request) {
 
 	err := decoder.Decode(&createUser)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		returnErrorResponse(w, standardError)
 		return
 	}
@@ -42,12 +41,10 @@ func (cfg *apiConfig) handleNewUser(w http.ResponseWriter, req *http.Request) {
 	dbUser, err := cfg.dbQueries.CreateUser(req.Context(), params)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		returnErrorResponse(w, standardError)
 		return
 	}
 	if dbUser.Email == "" {
-		w.WriteHeader(http.StatusBadRequest)
 		returnErrorResponse(w, standardError)
 		return
 	}
