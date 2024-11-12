@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"net/http"
 	"testing"
 	"time"
 
@@ -104,4 +105,44 @@ func TestMalformedToken(t *testing.T) {
 	if !errors.Is(err, jwt.ErrTokenMalformed) {
 		t.Errorf("Expected an error for malformed token, got: %v\n", err)
 	}
+}
+
+func TestBearerToken(t *testing.T) {
+	expected := "1235234lkjsadfasd"
+	header := make(http.Header)
+	header.Set("Authorization", "Bearer "+expected)
+
+	actual, err := GetBearerToken(header)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if actual != expected {
+		t.Errorf("Expected bearer token to equal %v, got %v\n", expected, actual)
+	}
+}
+
+func TestMalformedBearerToken(t *testing.T) {
+	malformedError := "malformed header"
+	missingAutherror := "missing authorization header"
+	header := make(http.Header)
+	header.Set("Authorization", "Bearer ")
+	_, err := GetBearerToken(header)
+	if err == nil {
+		t.Fatal("expected malformed token error, got nil")
+	} else {
+		if err.Error() != malformedError {
+			t.Errorf("expected error message to equal '%v', got %v\n", malformedError, err)
+		}
+	}
+
+	header2 := make(http.Header)
+	_, err = GetBearerToken(header2)
+	if err == nil {
+		t.Fatal("expected malformed token error, got nil")
+	} else {
+		if err.Error() != missingAutherror {
+			t.Errorf("expected error message to equal '%v', got %v\n", missingAutherror, err)
+		}
+	}
+
 }
