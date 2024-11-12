@@ -37,7 +37,7 @@ func createServer(port string) *Server {
 func (s *Server) startServer() {
 	s.Handler.Handle("/app/", http.StripPrefix("/app/", s.Config.middlewareMetricsInc(http.FileServer(serverRootPath))))
 	s.Handler.HandleFunc("GET /api/healthz", handleReadiness)
-	s.Handler.HandleFunc("POST /api/chirps", handleNewChirp)
+	s.Handler.HandleFunc("POST /api/chirps", s.Config.handleNewChirp)
 	s.Handler.HandleFunc("GET /admin/metrics", s.Config.handlerMetrics)
 	s.Handler.HandleFunc("POST /admin/reset", s.Config.handleReset)
 	s.Handler.HandleFunc("POST /api/users", s.Config.handleNewUser)

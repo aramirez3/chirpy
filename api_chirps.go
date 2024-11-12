@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -13,11 +12,16 @@ import (
 )
 
 type Chirp struct {
-	Id        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Body      string `json:"body"`
-	UserId    uuid.UUID
+	Id        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserId    uuid.UUID `json:"user_id"`
+}
+
+type ChirpRequest struct {
+	Body   string    `json:"body"`
+	UserId uuid.UUID `json:"user_id"`
 }
 
 type ErrorResponse struct {
@@ -28,42 +32,46 @@ type ValidResponse struct {
 	Valid bool `json:"valid"`
 }
 
-func (cfg *apiConfig) createTestUser(req *http.Request) database.User {
-	createUser := CreateUser{}
-	params := database.CreateUserParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Email:     createUser.Email,
-	}
-	dbUser, _ := cfg.dbQueries.CreateUser(req.Context(), params)
-	return dbUser
-}
-
-func handleNewChirp(w http.ResponseWriter, req *http.Request) {
-	user := cfg.createTestUser(req)
-	chirp := Chirp{
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-	isValid, errorString := validateChirp(req.Body, &chirp)
+func (cfg *apiConfig) handleNewChirp(w http.ResponseWriter, req *http.Request) {
+	reqChirp := ChirpRequest{}
+	isValid, errorString := validateChirpRequest(req.Body, &reqChirp)
 	w.Header().Add(contentType, plainTextContentType)
 	if errorString != "" || !isValid {
 		returnErrorResponse(w, errorString)
 		return
 	}
 
+	chirp := Chirp{
+		Id:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Body:      reqChirp.Body,
+		UserId:    reqChirp.UserId,
+	}
 	encodedChirp, err := encodeJson(chirp)
 	if err != nil {
 		returnErrorResponse(w, standardError)
 		return
 	}
-	log.Printf("This chirp gets encoded:\n%v\n", chirp)
+
+	params := database.CreateChirpParams{
+		ID:        chirp.Id,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserId,
+	}
+	_, err = cfg.dbQueries.CreateChirp(req.Context(), params)
+
+	if err != nil {
+		returnErrorResponse(w, err.Error())
+		return
+	}
 	w.WriteHeader(http.StatusCreated)
 	w.Write(encodedChirp)
 }
 
-func validateChirp(body io.ReadCloser, chirp *Chirp) (bool, string) {
+func validateChirpRequest(body io.ReadCloser, chirp *ChirpRequest) (bool, string) {
 	decoder := json.NewDecoder(body)
 	err := decoder.Decode(&chirp)
 	if err != nil {
@@ -81,7 +89,7 @@ func validateChirp(body io.ReadCloser, chirp *Chirp) (bool, string) {
 	return true, ""
 }
 
-func removeProfanity(chirp *Chirp) {
+func removeProfanity(chirp *ChirpRequest) {
 	badWords := map[string]bool{
 		"kerfuffle": true,
 		"sharbert":  true,
