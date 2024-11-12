@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aramirez3/chirpy/internal/auth"
 	"github.com/aramirez3/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -37,6 +38,18 @@ type ValidResponse struct {
 }
 
 func (cfg *apiConfig) handleNewChirp(w http.ResponseWriter, req *http.Request) {
+	token, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		returnNotAuthorized(w)
+		return
+	}
+
+	jwtId, err := auth.ValidateJWT(token, cfg.Secret)
+	if err != nil {
+		returnNotAuthorized(w)
+		return
+	}
+
 	reqChirp := ChirpRequest{}
 	isValid, errorString := validateChirpRequest(req.Body, &reqChirp)
 	w.Header().Add(contentType, plainTextContentType)
@@ -50,8 +63,9 @@ func (cfg *apiConfig) handleNewChirp(w http.ResponseWriter, req *http.Request) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Body:      reqChirp.Body,
-		UserId:    reqChirp.UserId,
+		UserId:    jwtId,
 	}
+
 	encodedChirp, err := encodeJson(chirp)
 	if err != nil {
 		returnErrorResponse(w, standardError)

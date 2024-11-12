@@ -19,6 +19,7 @@ type Server struct {
 type apiConfig struct {
 	fileServerHits atomic.Int32
 	dbQueries      *database.Queries
+	Secret         string
 }
 
 const (

@@ -15,11 +15,13 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
+	Token     string    `json:"token"`
 }
 
 type CreateUser struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email            string `json:"email"`
+	Password         string `json:"password"`
+	ExpiresInSeconds int    `json:"expires_in_seconds"`
 }
 
 type Login = CreateUser
@@ -77,6 +79,7 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
 		returnErrorResponse(w, standardError)
 		return
 	}
+
 	dbUser, err := cfg.dbQueries.GetUserByEmail(req.Context(), login.Email)
 	if err != nil || dbUser.HashedPassword == "" {
 		returnErrorResponse(w, standardError)
@@ -89,14 +92,28 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	expires := time.Hour
+	if login.ExpiresInSeconds > 0 && login.ExpiresInSeconds < 3600 {
+		expires = time.Duration(login.ExpiresInSeconds) * time.Second
+	}
+
+	jwt, err := auth.MakeJWT(dbUser.ID, cfg.Secret, expires)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
+
 	w.WriteHeader(http.StatusOK)
 	user := ToResponseUser(dbUser)
+	user.Token = jwt
+
 	responseUser, err := encodeJson(user)
 	if err != nil {
 		returnNotAuthorized(w)
 		return
 	}
-	w.Header().Add(contentType, plainTextContentType)
+	w.Header().Set(contentType, plainTextContentType)
 	w.Write(responseUser)
 }
 

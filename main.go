@@ -20,5 +20,11 @@ func main() {
 	}
 	s := createServer("8080")
 	s.Config.dbQueries = database.New(db)
+	env, err := godotenv.Read()
+	if err != nil {
+		fmt.Printf("error reading .env file: %s\n", err)
+		return
+	}
+	s.Config.Secret = env["chirpy_secret"]
 	s.startServer()
 }
