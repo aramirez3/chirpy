@@ -19,7 +19,7 @@ INSERT INTO users(
     updated_at,
     email
 )
-    values($1, $2, $3, $4)
+    VALUES($1, $2, $3, $4)
     returning id, created_at, updated_at, email
 `
 
@@ -48,7 +48,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const deleteAllUsers = `-- name: DeleteAllUsers :exec
-DELETE from users
+DELETE FROM users
 `
 
 func (q *Queries) DeleteAllUsers(ctx context.Context) error {
@@ -57,7 +57,7 @@ func (q *Queries) DeleteAllUsers(ctx context.Context) error {
 }
 
 const getUsersCount = `-- name: GetUsersCount :one
-Select count(*) from users
+SELECT count(*) FROM users
 `
 
 func (q *Queries) GetUsersCount(ctx context.Context) (int64, error) {

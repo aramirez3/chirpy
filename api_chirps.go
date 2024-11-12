@@ -11,6 +11,10 @@ import (
 	"github.com/google/uuid"
 )
 
+type Chirps struct {
+	Chirps []Chirp
+}
+
 type Chirp struct {
 	Id        uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -64,7 +68,7 @@ func (cfg *apiConfig) handleNewChirp(w http.ResponseWriter, req *http.Request) {
 	_, err = cfg.dbQueries.CreateChirp(req.Context(), params)
 
 	if err != nil {
-		returnErrorResponse(w, err.Error())
+		returnErrorResponse(w, standardError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -106,5 +110,42 @@ func removeProfanity(chirp *ChirpRequest) {
 			}
 		}
 		chirp.Body = strings.Join(words, " ")
+	}
+}
+
+func (cfg *apiConfig) handleGetChirps(w http.ResponseWriter, req *http.Request) {
+	dbChirps, err := cfg.dbQueries.GetAllChirps(req.Context())
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	responseChirps := []Chirp{}
+	if len(dbChirps) > 0 {
+		responseChirps = dbChirpsToResponse(dbChirps)
+	}
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(responseChirps)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	w.Header().Add(contentType, plainTextContentType)
+}
+
+func dbChirpsToResponse(dbChirps []database.Chirp) []Chirp {
+	response := []Chirp{}
+	for _, c := range dbChirps {
+		response = append(response, dbChirpToResponse(c))
+	}
+	return response
+}
+
+func dbChirpToResponse(c database.Chirp) Chirp {
+	return Chirp{
+		Id:        c.ID,
+		CreatedAt: c.CreatedAt,
+		UpdatedAt: c.UpdatedAt,
+		Body:      c.Body,
+		UserId:    c.UserID,
 	}
 }

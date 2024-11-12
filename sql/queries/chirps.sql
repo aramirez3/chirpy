@@ -7,12 +7,16 @@ INSERT INTO chirps(
     body,
     user_id
 )
-    values($1, $2, $3, $4, $5)
+    VALUES($1, $2, $3, $4, $5)
     RETURNING *;
 
 -- name: DeleteAllChirps :exec
 
-DELETE from chirps;
+DELETE FROM chirps;
 
 -- name: GetChirpsCount :one
-Select count(*) from chirps;
+SELECT count(*) FROM chirps;
+
+-- name: GetAllChirps :many
+SELECT * FROM chirps
+ORDER BY created_at ASC;

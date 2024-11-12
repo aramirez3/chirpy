@@ -5,11 +5,11 @@ INSERT INTO users(
     updated_at,
     email
 )
-    values($1, $2, $3, $4)
+    VALUES($1, $2, $3, $4)
     returning *;
 
 -- name: DeleteAllUsers :exec
-DELETE from users;
+DELETE FROM users;
 
 -- name: GetUsersCount :one
-Select count(*) from users;
+SELECT count(*) FROM users;
