@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/aramirez3/chirpy/internal/auth"
 	"github.com/aramirez3/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -17,7 +18,8 @@ type User struct {
 }
 
 type CreateUser struct {
-	Email string
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func (cfg *apiConfig) handleNewUser(w http.ResponseWriter, req *http.Request) {
@@ -27,24 +29,28 @@ func (cfg *apiConfig) handleNewUser(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add(contentType, plainTextContentType)
 
 	err := decoder.Decode(&createUser)
+
+	if err != nil || createUser.Email == "" || createUser.Password == "" {
+		returnErrorResponse(w, standardError)
+		return
+	}
+
+	hash, err := auth.HashPassword(createUser.Password)
 	if err != nil {
 		returnErrorResponse(w, standardError)
 		return
 	}
 
 	params := database.CreateUserParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Email:     createUser.Email,
+		ID:             uuid.New(),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Email:          createUser.Email,
+		HashedPassword: hash,
 	}
 	dbUser, err := cfg.dbQueries.CreateUser(req.Context(), params)
 
-	if err != nil {
-		returnErrorResponse(w, standardError)
-		return
-	}
-	if dbUser.Email == "" {
+	if err != nil || dbUser.Email == "" {
 		returnErrorResponse(w, standardError)
 		return
 	}
