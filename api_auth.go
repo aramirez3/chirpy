@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"io"
 	"net/http"
 	"time"
@@ -12,7 +12,7 @@ import (
 )
 
 type RefreshTokenResponse struct {
-	Token string
+	Token string `json:"token"`
 }
 
 func (cfg *apiConfig) createRefreshToken(ctx context.Context, user *User) error {
@@ -37,62 +37,101 @@ func (cfg *apiConfig) createRefreshToken(ctx context.Context, user *User) error 
 	return nil
 }
 
-func (cfg *apiConfig) createJWT(ctx context.Context, user *User) error {
-	fmt.Println("Create new JWT for user")
-	// create the jwt
-	// save it in the db with updated timestamps
-	// dont need to return value
-	newToken
-}
-
 func (cfg *apiConfig) handleRefresh(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("handle refresh")
 	reqBody, err := io.ReadAll(req.Body)
 	if err != nil || len(reqBody) > 0 {
-		fmt.Printf("err value: %v, isNil %v\n", err, err == nil)
-		fmt.Printf("reqBody: %v, hasLen %v\n", reqBody, len(reqBody) > 0)
 		returnBadRequest(w)
 		return
 	}
 	refreshToken, err := auth.GetBearerToken(req.Header)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
 		returnNotAuthorized(w)
 		return
 	}
 	if refreshToken == "" {
-		fmt.Println("bear token is empty")
 		returnNotAuthorized(w)
 		return
 	}
 	dbToken, err := cfg.dbQueries.GetRefreshToken(req.Context(), refreshToken)
 	if err != nil {
-		fmt.Printf("error making db call: %v\n", err)
 		returnNotAuthorized(w)
 		return
 	}
 
 	if dbToken.ExpiresAt.Before(time.Now().UTC()) {
-		fmt.Println("refresh token is expired")
 		returnNotAuthorized(w)
 		return
 	} else {
-		fmt.Println("refresh token is still valid")
 	}
-	// need the user
-	// refresh the jwt for the user
-	newToken := RefreshTokenResponse{
-		// should be the refreshed token from user
-		Token: dbToken.Token,
-	}
-	respBody, err := encodeJson(newToken)
-
+	jwt, err := auth.MakeJWT(dbToken.UserID, cfg.Secret, time.Hour)
 	if err != nil {
-		fmt.Printf("error encoding token response %v\n", err)
 		returnErrorResponse(w, standardError)
 		return
 	}
 
+	newToken := RefreshTokenResponse{
+		Token: jwt,
+	}
+	respBody, err := encodeJson(newToken)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
 	w.WriteHeader(http.StatusCreated)
 	w.Write(respBody)
+}
+
+func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
+	decoder := json.NewDecoder(req.Body)
+	login := Login{}
+	err := decoder.Decode(&login)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+
+	dbUser, err := cfg.dbQueries.GetUserByEmail(req.Context(), login.Email)
+	if err != nil || dbUser.HashedPassword == "" {
+		returnErrorResponse(w, standardError)
+		return
+	}
+
+	err = auth.CheckPasswordHash(login.Password, dbUser.HashedPassword)
+	if err != nil {
+		returnNotAuthorized(w)
+		return
+	}
+
+	jwt, err := auth.MakeJWT(dbUser.ID, cfg.Secret, time.Hour)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
+
+	w.WriteHeader(http.StatusOK)
+	user := ToResponseUser(dbUser)
+	err = cfg.createRefreshToken(req.Context(), &user)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	user.Token = jwt
+
+	responseUser, err := encodeJson(user)
+	if err != nil {
+		returnNotAuthorized(w)
+		return
+	}
+	w.Header().Set(contentType, plainTextContentType)
+	w.Write(responseUser)
+}
+
+func ToResponseUser(u database.User) User {
+	return User{
+		Id:        u.ID,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+		Email:     u.Email,
+	}
 }
