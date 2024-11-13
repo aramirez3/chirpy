@@ -20,6 +20,7 @@ type apiConfig struct {
 	fileServerHits atomic.Int32
 	dbQueries      *database.Queries
 	Secret         string
+	PolkaKey       string
 }
 
 const (
@@ -88,7 +89,7 @@ func returnNotFound(w http.ResponseWriter) {
 	w.Write(respBody)
 }
 
-func returnNotAuthorized(w http.ResponseWriter) {
+func returnUnauthorized(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusUnauthorized)
 	w.Header().Add(contentType, plainTextContentType)
 	respBody, _ := encodeJson(ErrorResponse{

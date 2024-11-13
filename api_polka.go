@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/aramirez3/chirpy/internal/auth"
 	"github.com/aramirez3/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -24,9 +25,15 @@ const (
 )
 
 func (cfg *apiConfig) handlePolkaWebhooks(w http.ResponseWriter, req *http.Request) {
+	apiKey, err := auth.GetAPIKey(req.Header)
+	if err != nil || apiKey != cfg.PolkaKey {
+		returnUnauthorized(w)
+		return
+	}
+
 	decoder := json.NewDecoder(req.Body)
 	requestData := PolkaRequest{}
-	err := decoder.Decode(&requestData)
+	err = decoder.Decode(&requestData)
 	if err != nil {
 		returnErrorResponse(w, standardError)
 		return

@@ -77,7 +77,7 @@ func (cfg *apiConfig) handleNewUser(w http.ResponseWriter, req *http.Request) {
 func (cfg *apiConfig) handleUserUpdate(w http.ResponseWriter, req *http.Request) {
 	token, err := auth.GetBearerToken(req.Header)
 	if err != nil {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (cfg *apiConfig) handleUserUpdate(w http.ResponseWriter, req *http.Request)
 		if err.Error() == "invalid token" || err.Error() == "subject is empty" {
 			returnBadRequest(w)
 		} else {
-			returnNotAuthorized(w)
+			returnUnauthorized(w)
 		}
 		return
 	}

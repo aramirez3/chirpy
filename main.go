@@ -25,6 +25,7 @@ func main() {
 		fmt.Printf("error reading .env file: %s\n", err)
 		return
 	}
-	s.Config.Secret = env["chirpy_secret"]
+	s.Config.Secret = env["CHIRPY_SECRET"]
+	s.Config.PolkaKey = env["POLKA_KEY"]
 	s.startServer()
 }

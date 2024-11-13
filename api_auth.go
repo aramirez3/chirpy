@@ -47,18 +47,18 @@ func (cfg *apiConfig) handleRefresh(w http.ResponseWriter, req *http.Request) {
 
 	refreshToken, err := auth.GetBearerToken(req.Header)
 	if err != nil {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 	if refreshToken == "" {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 
 	now := time.Now().UTC()
 	dbToken, err := cfg.dbQueries.GetRefreshToken(req.Context(), refreshToken)
 	if err != nil || dbToken.ExpiresAt.Before(now) || (dbToken.RevokedAt.Valid && dbToken.RevokedAt.Time.Before(now)) {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 
@@ -97,7 +97,7 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
 
 	err = auth.CheckPasswordHash(login.Password, dbUser.HashedPassword)
 	if err != nil {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 
@@ -119,7 +119,7 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
 
 	responseUser, err := encodeJson(user)
 	if err != nil {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 	w.Header().Set(contentType, plainTextContentType)
@@ -144,17 +144,17 @@ func (cfg *apiConfig) handleRevoke(w http.ResponseWriter, req *http.Request) {
 	}
 	refreshToken, err := auth.GetBearerToken(req.Header)
 	if err != nil {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 	if refreshToken == "" {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 	now := time.Now().UTC()
 	dbToken, err := cfg.dbQueries.GetRefreshToken(req.Context(), refreshToken)
 	if err != nil || dbToken.ExpiresAt.Before(now) || (dbToken.RevokedAt.Valid && dbToken.RevokedAt.Time.Before(now)) {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 	params := database.UpdateRefreshTokenParams{

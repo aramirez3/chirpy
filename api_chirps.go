@@ -40,13 +40,13 @@ type ValidResponse struct {
 func (cfg *apiConfig) handleNewChirp(w http.ResponseWriter, req *http.Request) {
 	token, err := auth.GetBearerToken(req.Header)
 	if err != nil {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 
 	jwtId, err := auth.ValidateJWT(token, cfg.Secret)
 	if err != nil {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 
@@ -190,7 +190,7 @@ func dbChirpToResponse(c database.Chirp) Chirp {
 func (cfg *apiConfig) handleDeleteChirp(w http.ResponseWriter, req *http.Request) {
 	token, err := auth.GetBearerToken(req.Header)
 	if err != nil {
-		returnNotAuthorized(w)
+		returnUnauthorized(w)
 		return
 	}
 
@@ -199,7 +199,7 @@ func (cfg *apiConfig) handleDeleteChirp(w http.ResponseWriter, req *http.Request
 		if err.Error() == "invalid token" || err.Error() == "subject is empty" {
 			returnBadRequest(w)
 		} else {
-			returnNotAuthorized(w)
+			returnUnauthorized(w)
 		}
 		return
 	}
