@@ -99,10 +99,6 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+jwt)
-	if err != nil {
-		returnErrorResponse(w, standardError)
-		return
-	}
 
 	w.WriteHeader(http.StatusOK)
 	user := ToResponseUser(dbUser)
