@@ -77,7 +77,7 @@ func (cfg *apiConfig) handleRefresh(w http.ResponseWriter, req *http.Request) {
 		returnErrorResponse(w, standardError)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	w.Write(respBody)
 }
 
