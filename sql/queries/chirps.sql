@@ -21,14 +21,23 @@ WHERE id = $1;
 -- name: GetChirpsCount :one
 SELECT count(*) FROM chirps;
 
--- name: GetAllChirps :many
+-- name: GetAllChirpsAsc :many
 SELECT * FROM chirps
 ORDER BY created_at ASC;
 
--- name: GetChirpByAuthorId :many
+-- name: GetAllChirpsDesc :many
+SELECT * FROM chirps
+ORDER BY created_at DESC;
+
+-- name: GetChirpByAuthorIdAsc :many
 SELECT * FROM chirps
     WHERE user_id=$1
     ORDER BY created_at ASC;
+
+-- name: GetChirpByAuthorIdDesc :many
+SELECT * FROM chirps
+    WHERE user_id=$1
+    ORDER BY created_at DESC;
 
 -- name: DeleteChirpById :one
 DELETE FROM chirps

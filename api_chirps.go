@@ -129,16 +129,29 @@ func removeProfanity(chirp *ChirpRequest) {
 
 func (cfg *apiConfig) handleGetChirps(w http.ResponseWriter, req *http.Request) {
 	authIdString := req.URL.Query().Get("author_id")
+	sortString := req.URL.Query().Get("sort")
+	sortAsc := sortString == "" || sortString == "asc" || sortString != "desc"
+	if sortString == "desc" {
+		sortAsc = false
+	}
 	if authIdString != "" {
 		authorId, err := uuid.Parse(authIdString)
 		if err != nil || authIdString == "" || authorId == uuid.Nil {
 			returnChirpsResponse(w, []database.Chirp{})
 			return
 		}
-		cfg.getChirpsByAuthorId(w, req, authorId)
+		if sortAsc {
+			cfg.getChirpsByAuthorIdAsc(w, req, authorId)
+			return
+		}
+		cfg.getChirpsByAuthorIdDesc(w, req, authorId)
 		return
 	}
-	cfg.getAllChirps(w, req)
+	if sortAsc {
+		cfg.getAllChirpsAsc(w, req)
+		return
+	}
+	cfg.getAllChirpsDesc(w, req)
 }
 
 func (cfg *apiConfig) handleGetChirp(w http.ResponseWriter, req *http.Request) {
@@ -227,8 +240,8 @@ func (cfg *apiConfig) handleDeleteChirp(w http.ResponseWriter, req *http.Request
 
 }
 
-func (cfg *apiConfig) getChirpsByAuthorId(w http.ResponseWriter, req *http.Request, authorId uuid.UUID) {
-	dbChirps, err := cfg.dbQueries.GetChirpByAuthorId(req.Context(), authorId)
+func (cfg *apiConfig) getChirpsByAuthorIdAsc(w http.ResponseWriter, req *http.Request, authorId uuid.UUID) {
+	dbChirps, err := cfg.dbQueries.GetChirpByAuthorIdAsc(req.Context(), authorId)
 	if err != nil {
 		returnErrorResponse(w, standardError)
 		return
@@ -236,8 +249,26 @@ func (cfg *apiConfig) getChirpsByAuthorId(w http.ResponseWriter, req *http.Reque
 	returnChirpsResponse(w, dbChirps)
 }
 
-func (cfg *apiConfig) getAllChirps(w http.ResponseWriter, req *http.Request) {
-	dbChirps, err := cfg.dbQueries.GetAllChirps(req.Context())
+func (cfg *apiConfig) getChirpsByAuthorIdDesc(w http.ResponseWriter, req *http.Request, authorId uuid.UUID) {
+	dbChirps, err := cfg.dbQueries.GetChirpByAuthorIdDesc(req.Context(), authorId)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	returnChirpsResponse(w, dbChirps)
+}
+
+func (cfg *apiConfig) getAllChirpsAsc(w http.ResponseWriter, req *http.Request) {
+	dbChirps, err := cfg.dbQueries.GetAllChirpsAsc(req.Context())
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	returnChirpsResponse(w, dbChirps)
+}
+
+func (cfg *apiConfig) getAllChirpsDesc(w http.ResponseWriter, req *http.Request) {
+	dbChirps, err := cfg.dbQueries.GetAllChirpsDesc(req.Context())
 	if err != nil {
 		returnErrorResponse(w, standardError)
 		return
