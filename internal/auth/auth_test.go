@@ -146,3 +146,13 @@ func TestMalformedBearerToken(t *testing.T) {
 	}
 
 }
+
+func TestMakeRefreshToken(t *testing.T) {
+	rt, err := MakeRefreshToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rt == "" {
+		t.Fatal("refresh token is nil, expected a string")
+	}
+}

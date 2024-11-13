@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -11,17 +12,17 @@ import (
 )
 
 type User struct {
-	Id        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-	Token     string    `json:"token"`
+	Id           uuid.UUID `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Email        string    `json:"email"`
+	Token        string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"`
 }
 
 type CreateUser struct {
-	Email            string `json:"email"`
-	Password         string `json:"password"`
-	ExpiresInSeconds int    `json:"expires_in_seconds"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type Login = CreateUser
@@ -47,8 +48,8 @@ func (cfg *apiConfig) handleNewUser(w http.ResponseWriter, req *http.Request) {
 
 	params := database.CreateUserParams{
 		ID:             uuid.New(),
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
 		Email:          createUser.Email,
 		HashedPassword: hash,
 	}
@@ -92,20 +93,24 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	expires := time.Hour
-	if login.ExpiresInSeconds > 0 && login.ExpiresInSeconds < 3600 {
-		expires = time.Duration(login.ExpiresInSeconds) * time.Second
-	}
-
-	jwt, err := auth.MakeJWT(dbUser.ID, cfg.Secret, expires)
+	jwt, err := auth.MakeJWT(dbUser.ID, cfg.Secret, time.Hour)
 	if err != nil {
 		returnErrorResponse(w, standardError)
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+jwt)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	user := ToResponseUser(dbUser)
+	err = cfg.createRefreshToken(req.Context(), &user)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
 	user.Token = jwt
 
 	responseUser, err := encodeJson(user)
@@ -124,4 +129,26 @@ func ToResponseUser(u database.User) User {
 		UpdatedAt: u.UpdatedAt,
 		Email:     u.Email,
 	}
+}
+
+func (cfg *apiConfig) createRefreshToken(ctx context.Context, user *User) error {
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		return err
+	}
+	params := database.CreateRefreshTokenParams{
+		Token:     refreshToken,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		UserID:    user.Id,
+		ExpiresAt: time.Now().UTC().Add(24 * 60 * time.Hour),
+	}
+
+	_, err = cfg.dbQueries.CreateRefreshToken(ctx, params)
+	if err != nil {
+		return err
+	}
+
+	user.RefreshToken = refreshToken
+	return nil
 }

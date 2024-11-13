@@ -60,8 +60,8 @@ func (cfg *apiConfig) handleNewChirp(w http.ResponseWriter, req *http.Request) {
 
 	chirp := Chirp{
 		Id:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
 		Body:      reqChirp.Body,
 		UserId:    jwtId,
 	}
