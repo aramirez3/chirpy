@@ -46,6 +46,7 @@ func (s *Server) startServer() {
 	s.Handler.HandleFunc("POST /api/users", s.Config.handleNewUser)
 	s.Handler.HandleFunc("POST /api/login", s.Config.handleLogin)
 	s.Handler.HandleFunc("POST /api/refresh", s.Config.handleRefresh)
+	s.Handler.HandleFunc("POST /api/revoke", s.Config.handleRevoke)
 	fmt.Printf("🐣 Chirping on http://localhost%s\n", s.Addr)
 	err := http.ListenAndServe(s.Addr, s.Handler)
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -134,4 +135,37 @@ func ToResponseUser(u database.User) User {
 		UpdatedAt: u.UpdatedAt,
 		Email:     u.Email,
 	}
+}
+
+func (cfg *apiConfig) handleRevoke(w http.ResponseWriter, req *http.Request) {
+	reqBody, err := io.ReadAll(req.Body)
+	if err != nil || len(reqBody) > 0 {
+		returnBadRequest(w)
+		return
+	}
+	refreshToken, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		returnNotAuthorized(w)
+		return
+	}
+	if refreshToken == "" {
+		returnNotAuthorized(w)
+		return
+	}
+	now := time.Now().UTC()
+	params := database.UpdateRefreshTokenParams{
+		Token:     refreshToken,
+		UpdatedAt: now,
+		RevokedAt: sql.NullTime{
+			Time:  now,
+			Valid: true,
+		},
+	}
+	_, err = cfg.dbQueries.UpdateRefreshToken(req.Context(), params)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
