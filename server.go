@@ -44,6 +44,7 @@ func (s *Server) startServer() {
 	s.Handler.HandleFunc("GET /admin/metrics", s.Config.handlerMetrics)
 	s.Handler.HandleFunc("POST /admin/reset", s.Config.handleReset)
 	s.Handler.HandleFunc("POST /api/users", s.Config.handleNewUser)
+	s.Handler.HandleFunc("PUT /api/users", s.Config.handleUserUpdate)
 	s.Handler.HandleFunc("POST /api/login", s.Config.handleLogin)
 	s.Handler.HandleFunc("POST /api/refresh", s.Config.handleRefresh)
 	s.Handler.HandleFunc("POST /api/revoke", s.Config.handleRevoke)
