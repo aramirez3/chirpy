@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -125,26 +124,4 @@ func ToResponseUser(u database.User) User {
 		UpdatedAt: u.UpdatedAt,
 		Email:     u.Email,
 	}
-}
-
-func (cfg *apiConfig) createRefreshToken(ctx context.Context, user *User) error {
-	refreshToken, err := auth.MakeRefreshToken()
-	if err != nil {
-		return err
-	}
-	params := database.CreateRefreshTokenParams{
-		Token:     refreshToken,
-		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
-		UserID:    user.Id,
-		ExpiresAt: time.Now().UTC().Add(24 * 60 * time.Hour),
-	}
-
-	_, err = cfg.dbQueries.CreateRefreshToken(ctx, params)
-	if err != nil {
-		return err
-	}
-
-	user.RefreshToken = refreshToken
-	return nil
 }
