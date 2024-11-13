@@ -128,10 +128,11 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
 
 func ToResponseUser(u database.User) User {
 	return User{
-		Id:        u.ID,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
-		Email:     u.Email,
+		Id:          u.ID,
+		CreatedAt:   u.CreatedAt,
+		UpdatedAt:   u.UpdatedAt,
+		Email:       u.Email,
+		IsChirpyRed: u.IsChirpyRed.Bool,
 	}
 }
 
