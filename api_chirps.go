@@ -158,7 +158,7 @@ func (cfg *apiConfig) handleGetChirp(w http.ResponseWriter, req *http.Request) {
 	}
 	dbChirp, err := cfg.dbQueries.GetChirpById(req.Context(), chirpId)
 	if err != nil {
-		returnErrorResponse(w, standardError)
+		returnNotFound(w)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -185,4 +185,49 @@ func dbChirpToResponse(c database.Chirp) Chirp {
 		Body:      c.Body,
 		UserId:    c.UserID,
 	}
+}
+
+func (cfg *apiConfig) handleDeleteChirp(w http.ResponseWriter, req *http.Request) {
+	token, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		returnNotAuthorized(w)
+		return
+	}
+
+	jwtId, err := auth.ValidateJWT(token, cfg.Secret)
+	if err != nil {
+		if err.Error() == "invalid token" || err.Error() == "subject is empty" {
+			returnBadRequest(w)
+		} else {
+			returnNotAuthorized(w)
+		}
+		return
+	}
+
+	idString := req.PathValue("id")
+	if idString == "" {
+		returnNotFound(w)
+	}
+	chirpId, err := uuid.Parse(idString)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	dbChirp, err := cfg.dbQueries.GetChirpById(req.Context(), chirpId)
+	if err != nil {
+		returnNotFound(w)
+		return
+	}
+
+	if dbChirp.UserID != jwtId {
+		returnForbidden(w)
+		return
+	}
+	_, err = cfg.dbQueries.DeleteChirpById(req.Context(), dbChirp.ID)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+
 }
