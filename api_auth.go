@@ -44,6 +44,7 @@ func (cfg *apiConfig) handleRefresh(w http.ResponseWriter, req *http.Request) {
 		returnBadRequest(w)
 		return
 	}
+
 	refreshToken, err := auth.GetBearerToken(req.Header)
 	if err != nil {
 		returnNotAuthorized(w)
@@ -53,17 +54,14 @@ func (cfg *apiConfig) handleRefresh(w http.ResponseWriter, req *http.Request) {
 		returnNotAuthorized(w)
 		return
 	}
+
+	now := time.Now().UTC()
 	dbToken, err := cfg.dbQueries.GetRefreshToken(req.Context(), refreshToken)
-	if err != nil {
+	if err != nil || dbToken.ExpiresAt.Before(now) || (dbToken.RevokedAt.Valid && dbToken.RevokedAt.Time.Before(now)) {
 		returnNotAuthorized(w)
 		return
 	}
 
-	if dbToken.ExpiresAt.Before(time.Now().UTC()) {
-		returnNotAuthorized(w)
-		return
-	} else {
-	}
 	jwt, err := auth.MakeJWT(dbToken.UserID, cfg.Secret, time.Hour)
 	if err != nil {
 		returnErrorResponse(w, standardError)
@@ -153,6 +151,11 @@ func (cfg *apiConfig) handleRevoke(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	now := time.Now().UTC()
+	dbToken, err := cfg.dbQueries.GetRefreshToken(req.Context(), refreshToken)
+	if err != nil || dbToken.ExpiresAt.Before(now) || (dbToken.RevokedAt.Valid && dbToken.RevokedAt.Time.Before(now)) {
+		returnNotAuthorized(w)
+		return
+	}
 	params := database.UpdateRefreshTokenParams{
 		Token:     refreshToken,
 		UpdatedAt: now,
