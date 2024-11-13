@@ -1,5 +1,5 @@
 # chirpy
-A Go web server with a simple Twitter clone BE.
+A simple Twitter clone BE in Go.
 
 ## Requirements
 - Install [Go](https://go.dev/doc/install)
