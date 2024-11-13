@@ -128,22 +128,17 @@ func removeProfanity(chirp *ChirpRequest) {
 }
 
 func (cfg *apiConfig) handleGetChirps(w http.ResponseWriter, req *http.Request) {
-	dbChirps, err := cfg.dbQueries.GetAllChirps(req.Context())
-	if err != nil {
-		returnErrorResponse(w, standardError)
+	authIdString := req.URL.Query().Get("author_id")
+	if authIdString != "" {
+		authorId, err := uuid.Parse(authIdString)
+		if err != nil || authIdString == "" || authorId == uuid.Nil {
+			returnChirpsResponse(w, []database.Chirp{})
+			return
+		}
+		cfg.getChirpsByAuthorId(w, req, authorId)
 		return
 	}
-	responseChirps := []Chirp{}
-	if len(dbChirps) > 0 {
-		responseChirps = dbChirpsToResponse(dbChirps)
-	}
-	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(responseChirps)
-	if err != nil {
-		returnErrorResponse(w, standardError)
-		return
-	}
-	w.Header().Add(contentType, plainTextContentType)
+	cfg.getAllChirps(w, req)
 }
 
 func (cfg *apiConfig) handleGetChirp(w http.ResponseWriter, req *http.Request) {
@@ -230,4 +225,37 @@ func (cfg *apiConfig) handleDeleteChirp(w http.ResponseWriter, req *http.Request
 	}
 	w.WriteHeader(http.StatusNoContent)
 
+}
+
+func (cfg *apiConfig) getChirpsByAuthorId(w http.ResponseWriter, req *http.Request, authorId uuid.UUID) {
+	dbChirps, err := cfg.dbQueries.GetChirpByAuthorId(req.Context(), authorId)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	returnChirpsResponse(w, dbChirps)
+}
+
+func (cfg *apiConfig) getAllChirps(w http.ResponseWriter, req *http.Request) {
+	dbChirps, err := cfg.dbQueries.GetAllChirps(req.Context())
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	returnChirpsResponse(w, dbChirps)
+}
+
+func returnChirpsResponse(w http.ResponseWriter, chirps []database.Chirp) {
+	responseChirps := []Chirp{}
+	if len(chirps) > 0 {
+		responseChirps = dbChirpsToResponse(chirps)
+	}
+	w.Header().Set(contentType, plainTextContentType)
+	w.WriteHeader(http.StatusOK)
+	err := json.NewEncoder(w).Encode(responseChirps)
+	if err != nil {
+		returnErrorResponse(w, standardError)
+		return
+	}
+	w.Header().Add(contentType, plainTextContentType)
 }

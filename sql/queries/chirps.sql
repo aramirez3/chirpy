@@ -25,6 +25,11 @@ SELECT count(*) FROM chirps;
 SELECT * FROM chirps
 ORDER BY created_at ASC;
 
+-- name: GetChirpByAuthorId :many
+SELECT * FROM chirps
+    WHERE user_id=$1
+    ORDER BY created_at ASC;
+
 -- name: DeleteChirpById :one
 DELETE FROM chirps
     WHERE id=$1
